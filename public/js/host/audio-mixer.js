@@ -9,6 +9,7 @@ class AudioMixer {
     this.compressor = null;
     this.channels = new Map(); // micId -> channel info
     this.initialized = false;
+    this.masterVolume = 1.0;
 
     // Efectos globales
     this.globalEffects = {
@@ -84,7 +85,22 @@ class AudioMixer {
     }
 
     try {
-      // Crear source desde el stream
+      // IMPORTANTE: Crear elemento de audio para reproducir el stream directamente
+      // Esto es necesario para WebRTC en algunos navegadores
+      const audioElement = new Audio();
+      audioElement.srcObject = stream;
+      audioElement.autoplay = true;
+      audioElement.playsInline = true;
+      audioElement.volume = 1.0;
+
+      // Forzar reproducción
+      audioElement.play().then(() => {
+        console.log('[AudioMixer] Audio element reproduciendo para:', micId);
+      }).catch(err => {
+        console.error('[AudioMixer] Error reproduciendo audio element:', err);
+      });
+
+      // Crear source desde el stream para Web Audio API (efectos y VU meter)
       const source = this.audioContext.createMediaStreamSource(stream);
 
       // Nodo de ganancia individual
@@ -117,16 +133,11 @@ class AudioMixer {
       highShelf.frequency.value = 3200;
       highShelf.gain.value = 0;
 
-      // Conectar cadena
-      source.connect(gainNode);
-      gainNode.connect(lowShelf);
-      lowShelf.connect(midPeak);
-      midPeak.connect(highShelf);
-      highShelf.connect(panner);
-      panner.connect(analyser);
-      analyser.connect(this.masterGain);
+      // Conectar cadena para análisis (VU meter)
+      source.connect(analyser);
 
       const channel = {
+        audioElement,
         source,
         gainNode,
         panner,
@@ -155,13 +166,14 @@ class AudioMixer {
     if (!channel) return;
 
     try {
+      // Detener y limpiar elemento de audio
+      if (channel.audioElement) {
+        channel.audioElement.pause();
+        channel.audioElement.srcObject = null;
+      }
+
       channel.source.disconnect();
-      channel.gainNode.disconnect();
-      channel.panner.disconnect();
       channel.analyser.disconnect();
-      channel.eq.lowShelf.disconnect();
-      channel.eq.midPeak.disconnect();
-      channel.eq.highShelf.disconnect();
 
       this.channels.delete(micId);
       console.log('[AudioMixer] Canal eliminado:', micId);
@@ -179,11 +191,9 @@ class AudioMixer {
 
     channel.volume = volume;
 
-    if (!channel.muted) {
-      channel.gainNode.gain.setValueAtTime(
-        volume,
-        this.audioContext.currentTime
-      );
+    // Usar audioElement para el volumen
+    if (channel.audioElement && !channel.muted) {
+      channel.audioElement.volume = volume;
     }
   }
 
@@ -196,10 +206,10 @@ class AudioMixer {
 
     channel.muted = muted;
 
-    channel.gainNode.gain.setValueAtTime(
-      muted ? 0 : channel.volume,
-      this.audioContext.currentTime
-    );
+    // Usar audioElement para mute
+    if (channel.audioElement) {
+      channel.audioElement.volume = muted ? 0 : channel.volume;
+    }
   }
 
   /**
@@ -215,16 +225,12 @@ class AudioMixer {
     const hasSolo = Array.from(this.channels.values()).some(ch => ch.solo);
 
     this.channels.forEach((ch, id) => {
-      if (hasSolo) {
-        ch.gainNode.gain.setValueAtTime(
-          ch.solo ? ch.volume : 0,
-          this.audioContext.currentTime
-        );
-      } else {
-        ch.gainNode.gain.setValueAtTime(
-          ch.muted ? 0 : ch.volume,
-          this.audioContext.currentTime
-        );
+      if (ch.audioElement) {
+        if (hasSolo) {
+          ch.audioElement.volume = ch.solo ? ch.volume : 0;
+        } else {
+          ch.audioElement.volume = ch.muted ? 0 : ch.volume;
+        }
       }
     });
   }
@@ -233,12 +239,14 @@ class AudioMixer {
    * Establece el volumen master
    */
   setMasterVolume(volume) {
-    if (!this.masterGain) return;
+    this.masterVolume = volume;
 
-    this.masterGain.gain.setValueAtTime(
-      volume,
-      this.audioContext.currentTime
-    );
+    // Aplicar a todos los canales
+    this.channels.forEach((ch, id) => {
+      if (ch.audioElement && !ch.muted) {
+        ch.audioElement.volume = ch.volume * volume;
+      }
+    });
   }
 
   /**
