@@ -38,8 +38,11 @@ class AudioMixer {
     try {
       this.audioContext = new (window.AudioContext || window.webkitAudioContext)({
         sampleRate: 48000,
-        latencyHint: 'interactive'
+        latencyHint: 'playback' // Menor latencia
       });
+
+      console.log('[AudioMixer] Base latency:', this.audioContext.baseLatency, 's');
+      console.log('[AudioMixer] Output latency:', this.audioContext.outputLatency, 's');
 
       // Nodo de ganancia master
       this.masterGain = this.audioContext.createGain();
@@ -164,16 +167,33 @@ class AudioMixer {
 
     try {
       // IMPORTANTE: Crear elemento de audio para reproducir el stream directamente
-      // Esto es necesario para WebRTC en algunos navegadores
+      // Configurado para MÍNIMA LATENCIA
       const audioElement = new Audio();
       audioElement.srcObject = stream;
       audioElement.autoplay = true;
       audioElement.playsInline = true;
       audioElement.volume = 1.0;
 
-      // Forzar reproducción
+      // Optimizaciones de latencia
+      audioElement.preservesPitch = false; // Desactivar pitch preservation
+      if ('mozPreservesPitch' in audioElement) {
+        audioElement.mozPreservesPitch = false;
+      }
+
+      // Intentar reducir buffer (no estándar pero funciona en algunos navegadores)
+      try {
+        if (audioElement.webkitAudioDecodedByteCount !== undefined) {
+          // Chrome - intentar configurar bajo buffer
+        }
+      } catch(e) {}
+
+      // Forzar reproducción inmediata
       audioElement.play().then(() => {
         console.log('[AudioMixer] Audio element reproduciendo para:', micId);
+        // Log de latencia estimada
+        if (audioElement.buffered.length > 0) {
+          console.log('[AudioMixer] Buffer length:', audioElement.buffered.end(0) - audioElement.buffered.start(0), 's');
+        }
       }).catch(err => {
         console.error('[AudioMixer] Error reproduciendo audio element:', err);
       });

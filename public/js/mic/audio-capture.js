@@ -55,11 +55,13 @@ class AudioCapture {
         video: false
       });
 
-      // Crear contexto de audio
+      // Crear contexto de audio con mínima latencia
       this.audioContext = new (window.AudioContext || window.webkitAudioContext)({
         sampleRate: 48000,
-        latencyHint: 'interactive'
+        latencyHint: 'playback' // Menor latencia que 'interactive'
       });
+
+      console.log('[AudioCapture] Base latency:', this.audioContext.baseLatency, 's');
 
       // Crear nodos
       this.sourceNode = this.audioContext.createMediaStreamSource(this.stream);

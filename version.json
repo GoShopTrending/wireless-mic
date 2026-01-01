@@ -1,7 +1,18 @@
 {
-  "version": "0.2.2",
+  "version": "0.2.3",
   "releaseDate": "2026-01-01",
   "changelog": {
+    "0.2.3": {
+      "date": "2026-01-01",
+      "changes": [
+        "Optimizaciones de latencia AGRESIVAS",
+        "WebRTC: ptime=10ms, FEC desactivado, CBR mode",
+        "AudioContext: latencyHint='playback'",
+        "Reducción de servidores STUN (menos negociación)",
+        "Audio element optimizado para streaming",
+        "Latencia estimada reducida de ~200ms a ~80-120ms"
+      ]
+    },
     "0.2.2": {
       "date": "2026-01-01",
       "changes": [

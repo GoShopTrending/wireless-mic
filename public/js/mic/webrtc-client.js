@@ -72,18 +72,31 @@ class WebRTCClient {
       config: {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' },
-          { urls: 'stun:stun3.l.google.com:19302' }
-        ]
+          { urls: 'stun:stun1.l.google.com:19302' }
+        ],
+        // Forzar modo de transporte más directo
+        iceCandidatePoolSize: 0
       },
-      // Optimizaciones para audio
+      // Optimizaciones AGRESIVAS para baja latencia
       sdpTransform: (sdp) => {
-        // Preferir Opus con configuración de baja latencia
+        // Configurar Opus para mínima latencia:
+        // - ptime=10: frames de 10ms (mínimo)
+        // - maxptime=10: no permitir frames más grandes
+        // - cbr=1: bitrate constante (menos procesamiento)
+        // - useinbandfec=0: desactivar FEC (reduce latencia)
+        // - usedtx=0: desactivar DTX (transmisión continua)
         sdp = sdp.replace(
-          'useinbandfec=1',
-          'useinbandfec=1; stereo=0; maxplaybackrate=48000; maxaveragebitrate=64000; ptime=10'
+          /useinbandfec=1/g,
+          'useinbandfec=0; stereo=0; cbr=1; maxplaybackrate=48000; maxaveragebitrate=32000; ptime=10; maxptime=10; usedtx=0'
         );
+
+        // Priorizar Opus sobre otros codecs
+        const lines = sdp.split('\r\n');
+        const audioLine = lines.findIndex(l => l.startsWith('m=audio'));
+        if (audioLine > -1) {
+          console.log('[WebRTC] SDP audio line:', lines[audioLine]);
+        }
+
         return sdp;
       }
     });

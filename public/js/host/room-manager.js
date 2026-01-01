@@ -172,15 +172,24 @@ class RoomManager {
     console.log('[RoomManager] Iniciando WebRTC con:', micId);
 
     // Crear peer (no iniciador, esperamos offer del mic)
+    // Configurado para MÍNIMA LATENCIA
     const peer = new SimplePeer({
       initiator: false,
       trickle: true,
       config: {
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
-          { urls: 'stun:stun1.l.google.com:19302' },
-          { urls: 'stun:stun2.l.google.com:19302' }
-        ]
+          { urls: 'stun:stun1.l.google.com:19302' }
+        ],
+        iceCandidatePoolSize: 0
+      },
+      // Optimizaciones de latencia en respuesta
+      sdpTransform: (sdp) => {
+        sdp = sdp.replace(
+          /useinbandfec=1/g,
+          'useinbandfec=0; stereo=0; cbr=1; ptime=10; maxptime=10; usedtx=0'
+        );
+        return sdp;
       }
     });
 

@@ -1,6 +1,6 @@
 {
   "name": "wireless-microphone-pwa",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "App PWA de micrófono inalámbrico multi-dispositivo con conexión QR",
   "main": "server/index.js",
   "scripts": {
