@@ -155,13 +155,14 @@ module.exports = function(io, socket) {
     if (exists) {
       const room = roomService.getRoom(roomId);
       callback({
+        success: true,
         exists: true,
         roomName: room.roomName,
         micCount: room.mics.size,
         maxMics: room.settings.maxMics
       });
     } else {
-      callback({ exists: false });
+      callback({ success: true, exists: false });
     }
   });
 };
