@@ -1,7 +1,19 @@
+// Detectar BASE_URL correctamente
+function getBaseUrl() {
+  let url = process.env.BASE_URL || 'http://localhost:3000';
+
+  // Si Render pasa solo el hostname, agregar https://
+  if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+    url = `https://${url}`;
+  }
+
+  return url;
+}
+
 module.exports = {
   port: process.env.PORT || 3000,
   host: process.env.HOST || '0.0.0.0',
-  baseUrl: process.env.BASE_URL || 'http://localhost:3000',
+  baseUrl: getBaseUrl(),
 
   // Configuración de salas
   room: {
