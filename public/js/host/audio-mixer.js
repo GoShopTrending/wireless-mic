@@ -166,39 +166,7 @@ class AudioMixer {
     }
 
     try {
-      // IMPORTANTE: Crear elemento de audio para reproducir el stream directamente
-      // Configurado para MÍNIMA LATENCIA
-      const audioElement = new Audio();
-      audioElement.srcObject = stream;
-      audioElement.autoplay = true;
-      audioElement.playsInline = true;
-      audioElement.volume = 1.0;
-
-      // Optimizaciones de latencia
-      audioElement.preservesPitch = false; // Desactivar pitch preservation
-      if ('mozPreservesPitch' in audioElement) {
-        audioElement.mozPreservesPitch = false;
-      }
-
-      // Intentar reducir buffer (no estándar pero funciona en algunos navegadores)
-      try {
-        if (audioElement.webkitAudioDecodedByteCount !== undefined) {
-          // Chrome - intentar configurar bajo buffer
-        }
-      } catch(e) {}
-
-      // Forzar reproducción inmediata
-      audioElement.play().then(() => {
-        console.log('[AudioMixer] Audio element reproduciendo para:', micId);
-        // Log de latencia estimada
-        if (audioElement.buffered.length > 0) {
-          console.log('[AudioMixer] Buffer length:', audioElement.buffered.end(0) - audioElement.buffered.start(0), 's');
-        }
-      }).catch(err => {
-        console.error('[AudioMixer] Error reproduciendo audio element:', err);
-      });
-
-      // Crear source desde el stream para Web Audio API (efectos y VU meter)
+      // MODO ULTRA BAJA LATENCIA: Web Audio API directo (sin HTML Audio element)
       const source = this.audioContext.createMediaStreamSource(stream);
 
       // Nodo de ganancia individual
@@ -209,10 +177,10 @@ class AudioMixer {
       const panner = this.audioContext.createStereoPanner();
       panner.pan.value = 0;
 
-      // Analizador para VU meter
+      // Analizador para VU meter (configuración ligera)
       const analyser = this.audioContext.createAnalyser();
-      analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.8;
+      analyser.fftSize = 128; // Más pequeño = menos latencia
+      analyser.smoothingTimeConstant = 0.5;
 
       // EQ por canal
       const lowShelf = this.audioContext.createBiquadFilter();
@@ -231,11 +199,20 @@ class AudioMixer {
       highShelf.frequency.value = 3200;
       highShelf.gain.value = 0;
 
-      // Conectar cadena para análisis (VU meter)
-      source.connect(analyser);
+      // CADENA DE AUDIO COMPLETA:
+      // source -> gain -> EQ -> panner -> analyser -> masterGain -> compressor -> destination
+      source.connect(gainNode);
+      gainNode.connect(lowShelf);
+      lowShelf.connect(midPeak);
+      midPeak.connect(highShelf);
+      highShelf.connect(panner);
+      panner.connect(analyser);
+      analyser.connect(this.masterGain);
+
+      console.log('[AudioMixer] Canal conectado DIRECTO (ultra low latency) para:', micId);
 
       const channel = {
-        audioElement,
+        audioElement: null, // Ya no usamos Audio element
         source,
         gainNode,
         panner,
@@ -264,14 +241,16 @@ class AudioMixer {
     if (!channel) return;
 
     try {
-      // Detener y limpiar elemento de audio
-      if (channel.audioElement) {
-        channel.audioElement.pause();
-        channel.audioElement.srcObject = null;
+      // Desconectar todos los nodos de la cadena
+      if (channel.source) channel.source.disconnect();
+      if (channel.gainNode) channel.gainNode.disconnect();
+      if (channel.panner) channel.panner.disconnect();
+      if (channel.analyser) channel.analyser.disconnect();
+      if (channel.eq) {
+        channel.eq.lowShelf.disconnect();
+        channel.eq.midPeak.disconnect();
+        channel.eq.highShelf.disconnect();
       }
-
-      channel.source.disconnect();
-      channel.analyser.disconnect();
 
       this.channels.delete(micId);
       console.log('[AudioMixer] Canal eliminado:', micId);
@@ -289,9 +268,9 @@ class AudioMixer {
 
     channel.volume = volume;
 
-    // Usar audioElement para el volumen
-    if (channel.audioElement && !channel.muted) {
-      channel.audioElement.volume = volume;
+    // Usar gainNode para el volumen (Web Audio API directo)
+    if (channel.gainNode && !channel.muted) {
+      channel.gainNode.gain.setTargetAtTime(volume, this.audioContext.currentTime, 0.01);
     }
   }
 
@@ -304,9 +283,9 @@ class AudioMixer {
 
     channel.muted = muted;
 
-    // Usar audioElement para mute
-    if (channel.audioElement) {
-      channel.audioElement.volume = muted ? 0 : channel.volume;
+    // Usar gainNode para mute
+    if (channel.gainNode) {
+      channel.gainNode.gain.setTargetAtTime(muted ? 0 : channel.volume, this.audioContext.currentTime, 0.01);
     }
   }
 
@@ -323,12 +302,14 @@ class AudioMixer {
     const hasSolo = Array.from(this.channels.values()).some(ch => ch.solo);
 
     this.channels.forEach((ch, id) => {
-      if (ch.audioElement) {
+      if (ch.gainNode) {
+        let targetVolume;
         if (hasSolo) {
-          ch.audioElement.volume = ch.solo ? ch.volume : 0;
+          targetVolume = ch.solo ? ch.volume : 0;
         } else {
-          ch.audioElement.volume = ch.muted ? 0 : ch.volume;
+          targetVolume = ch.muted ? 0 : ch.volume;
         }
+        ch.gainNode.gain.setTargetAtTime(targetVolume, this.audioContext.currentTime, 0.01);
       }
     });
   }
@@ -339,12 +320,10 @@ class AudioMixer {
   setMasterVolume(volume) {
     this.masterVolume = volume;
 
-    // Aplicar a todos los canales
-    this.channels.forEach((ch, id) => {
-      if (ch.audioElement && !ch.muted) {
-        ch.audioElement.volume = ch.volume * volume;
-      }
-    });
+    // Usar masterGain directamente (más eficiente)
+    if (this.masterGain) {
+      this.masterGain.gain.setTargetAtTime(volume, this.audioContext.currentTime, 0.01);
+    }
   }
 
   /**

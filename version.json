@@ -1,7 +1,18 @@
 {
-  "version": "0.2.3",
+  "version": "0.2.4",
   "releaseDate": "2026-01-01",
   "changelog": {
+    "0.2.4": {
+      "date": "2026-01-01",
+      "changes": [
+        "ULTRA LOW LATENCY MODE",
+        "Eliminado HTML Audio element (añadía ~100ms de buffer)",
+        "Audio directo via Web Audio API: source -> gain -> EQ -> master -> destination",
+        "Analyser FFT reducido a 128 (menos procesamiento)",
+        "Todos los controles de volumen ahora usan gainNode nativo",
+        "Latencia estimada: ~50-80ms"
+      ]
+    },
     "0.2.3": {
       "date": "2026-01-01",
       "changes": [
