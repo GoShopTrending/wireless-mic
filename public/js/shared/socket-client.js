@@ -31,6 +31,14 @@ class SocketClient {
       this.socket.on('connect', () => {
         console.log('[Socket] Conectado:', this.socket.id);
         this.connected = true;
+
+        // Registrar listeners pendientes
+        this.listeners.forEach((callbacks, event) => {
+          callbacks.forEach(cb => {
+            this.socket.on(event, cb);
+          });
+        });
+
         resolve(this.socket);
       });
 
@@ -101,15 +109,17 @@ class SocketClient {
    * Escucha un evento del servidor
    */
   on(event, callback) {
-    if (!this.socket) return;
-
     // Guardar referencia para poder remover después
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);
     }
     this.listeners.get(event).push(callback);
 
-    this.socket.on(event, callback);
+    // Si el socket ya existe, registrar inmediatamente
+    if (this.socket) {
+      this.socket.on(event, callback);
+    }
+    // Si no, se registrarán cuando se conecte (ver connect())
   }
 
   /**
