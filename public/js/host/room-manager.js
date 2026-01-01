@@ -202,6 +202,9 @@ class RoomManager {
 
     peer.on('stream', (stream) => {
       console.log('[RoomManager] Stream recibido de:', micId);
+      console.log('[RoomManager] Audio tracks:', stream.getAudioTracks().length);
+      console.log('[RoomManager] Track enabled:', stream.getAudioTracks()[0]?.enabled);
+
       mic.stream = stream;
       mic.status = 'streaming';
 

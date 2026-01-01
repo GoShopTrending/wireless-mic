@@ -60,9 +60,12 @@ class AudioMixer {
    * Resume el contexto de audio (necesario después de interacción de usuario)
    */
   async resume() {
-    if (this.audioContext && this.audioContext.state === 'suspended') {
-      await this.audioContext.resume();
-      console.log('[AudioMixer] Contexto resumido');
+    if (this.audioContext) {
+      console.log('[AudioMixer] Estado del contexto:', this.audioContext.state);
+      if (this.audioContext.state === 'suspended') {
+        await this.audioContext.resume();
+        console.log('[AudioMixer] Contexto resumido, nuevo estado:', this.audioContext.state);
+      }
     }
   }
 

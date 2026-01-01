@@ -99,8 +99,11 @@
     };
 
     // Cuando recibimos stream de audio
-    roomManager.onMicStream = (micId, stream) => {
+    roomManager.onMicStream = async (micId, stream) => {
+      // Asegurar que el audio context esté activo
+      await audioMixer.resume();
       audioMixer.addMicChannel(micId, stream);
+      console.log('[Host] Stream de audio conectado para:', micId);
     };
 
     // Cuando se actualiza un micrófono
