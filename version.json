@@ -1,0 +1,36 @@
+{
+  "version": "0.2.0",
+  "releaseDate": "2026-01-01",
+  "changelog": {
+    "0.2.0": {
+      "date": "2026-01-01",
+      "changes": [
+        "Rediseño visual completo - Estilo Impostor/Liga",
+        "Nueva paleta de colores oscura (slate-900, slate-800)",
+        "Color temático Cyan para la app de micrófono",
+        "Animaciones: float, glow, slideUp, pulse-ring",
+        "Botones con gradientes y efectos hover",
+        "Cards con efecto glow en hover",
+        "Modales con backdrop blur",
+        "VU meters con gradiente de colores",
+        "Toggle switches estilizados",
+        "Big mic button con animación de pulso activo"
+      ]
+    },
+    "0.1.0": {
+      "date": "2026-01-01",
+      "changes": [
+        "MVP Completo - Wireless Microphone PWA",
+        "Arquitectura híbrida WebSocket + WebRTC P2P",
+        "Backend: Express + Socket.io con gestión de salas",
+        "Frontend Host: Mezclador de audio multi-canal con VU meters",
+        "Frontend Mic: Captura de audio y transmisión WebRTC",
+        "Conexión via código QR",
+        "Soporte para 10+ micrófonos simultáneos",
+        "Control de volumen individual y master",
+        "EQ de 3 bandas y efectos (Reverb, Echo)",
+        "PWA instalable con Service Worker"
+      ]
+    }
+  }
+}

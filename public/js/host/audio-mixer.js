@@ -1,0 +1,328 @@
+/**
+ * Audio Mixer para el Host
+ * Recibe, mezcla y reproduce audio de múltiples micrófonos
+ */
+class AudioMixer {
+  constructor() {
+    this.audioContext = null;
+    this.masterGain = null;
+    this.compressor = null;
+    this.channels = new Map(); // micId -> channel info
+    this.initialized = false;
+
+    // Efectos globales
+    this.globalEffects = {
+      reverb: 0,
+      echo: 0,
+      eqBass: 0,
+      eqMid: 0,
+      eqTreble: 0
+    };
+  }
+
+  /**
+   * Inicializa el contexto de audio
+   */
+  async init() {
+    if (this.initialized) return;
+
+    try {
+      this.audioContext = new (window.AudioContext || window.webkitAudioContext)({
+        sampleRate: 48000,
+        latencyHint: 'interactive'
+      });
+
+      // Nodo de ganancia master
+      this.masterGain = this.audioContext.createGain();
+      this.masterGain.gain.value = 1.0;
+
+      // Compresor para evitar distorsión
+      this.compressor = this.audioContext.createDynamicsCompressor();
+      this.compressor.threshold.value = -24;
+      this.compressor.knee.value = 30;
+      this.compressor.ratio.value = 12;
+      this.compressor.attack.value = 0.003;
+      this.compressor.release.value = 0.25;
+
+      // Conectar cadena master
+      this.masterGain.connect(this.compressor);
+      this.compressor.connect(this.audioContext.destination);
+
+      this.initialized = true;
+      console.log('[AudioMixer] Inicializado');
+    } catch (error) {
+      console.error('[AudioMixer] Error al inicializar:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Resume el contexto de audio (necesario después de interacción de usuario)
+   */
+  async resume() {
+    if (this.audioContext && this.audioContext.state === 'suspended') {
+      await this.audioContext.resume();
+      console.log('[AudioMixer] Contexto resumido');
+    }
+  }
+
+  /**
+   * Agrega un canal para un micrófono
+   */
+  addMicChannel(micId, stream) {
+    if (!this.initialized) {
+      console.error('[AudioMixer] No inicializado');
+      return null;
+    }
+
+    if (this.channels.has(micId)) {
+      console.warn('[AudioMixer] Canal ya existe para:', micId);
+      return this.channels.get(micId);
+    }
+
+    try {
+      // Crear source desde el stream
+      const source = this.audioContext.createMediaStreamSource(stream);
+
+      // Nodo de ganancia individual
+      const gainNode = this.audioContext.createGain();
+      gainNode.gain.value = 1.0;
+
+      // Panner para posicionamiento estéreo (opcional)
+      const panner = this.audioContext.createStereoPanner();
+      panner.pan.value = 0;
+
+      // Analizador para VU meter
+      const analyser = this.audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.8;
+
+      // EQ por canal
+      const lowShelf = this.audioContext.createBiquadFilter();
+      lowShelf.type = 'lowshelf';
+      lowShelf.frequency.value = 320;
+      lowShelf.gain.value = 0;
+
+      const midPeak = this.audioContext.createBiquadFilter();
+      midPeak.type = 'peaking';
+      midPeak.frequency.value = 1000;
+      midPeak.Q.value = 0.5;
+      midPeak.gain.value = 0;
+
+      const highShelf = this.audioContext.createBiquadFilter();
+      highShelf.type = 'highshelf';
+      highShelf.frequency.value = 3200;
+      highShelf.gain.value = 0;
+
+      // Conectar cadena
+      source.connect(gainNode);
+      gainNode.connect(lowShelf);
+      lowShelf.connect(midPeak);
+      midPeak.connect(highShelf);
+      highShelf.connect(panner);
+      panner.connect(analyser);
+      analyser.connect(this.masterGain);
+
+      const channel = {
+        source,
+        gainNode,
+        panner,
+        analyser,
+        eq: { lowShelf, midPeak, highShelf },
+        muted: false,
+        solo: false,
+        volume: 1.0
+      };
+
+      this.channels.set(micId, channel);
+      console.log('[AudioMixer] Canal agregado para:', micId);
+
+      return channel;
+    } catch (error) {
+      console.error('[AudioMixer] Error al agregar canal:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Elimina un canal de micrófono
+   */
+  removeMicChannel(micId) {
+    const channel = this.channels.get(micId);
+    if (!channel) return;
+
+    try {
+      channel.source.disconnect();
+      channel.gainNode.disconnect();
+      channel.panner.disconnect();
+      channel.analyser.disconnect();
+      channel.eq.lowShelf.disconnect();
+      channel.eq.midPeak.disconnect();
+      channel.eq.highShelf.disconnect();
+
+      this.channels.delete(micId);
+      console.log('[AudioMixer] Canal eliminado:', micId);
+    } catch (error) {
+      console.error('[AudioMixer] Error al eliminar canal:', error);
+    }
+  }
+
+  /**
+   * Establece el volumen de un micrófono
+   */
+  setMicVolume(micId, volume) {
+    const channel = this.channels.get(micId);
+    if (!channel) return;
+
+    channel.volume = volume;
+
+    if (!channel.muted) {
+      channel.gainNode.gain.setValueAtTime(
+        volume,
+        this.audioContext.currentTime
+      );
+    }
+  }
+
+  /**
+   * Silencia/des-silencia un micrófono
+   */
+  setMicMuted(micId, muted) {
+    const channel = this.channels.get(micId);
+    if (!channel) return;
+
+    channel.muted = muted;
+
+    channel.gainNode.gain.setValueAtTime(
+      muted ? 0 : channel.volume,
+      this.audioContext.currentTime
+    );
+  }
+
+  /**
+   * Solo un micrófono (silencia todos los demás)
+   */
+  setMicSolo(micId, solo) {
+    const channel = this.channels.get(micId);
+    if (!channel) return;
+
+    channel.solo = solo;
+
+    // Si hay algún solo activo, silenciar los no-solo
+    const hasSolo = Array.from(this.channels.values()).some(ch => ch.solo);
+
+    this.channels.forEach((ch, id) => {
+      if (hasSolo) {
+        ch.gainNode.gain.setValueAtTime(
+          ch.solo ? ch.volume : 0,
+          this.audioContext.currentTime
+        );
+      } else {
+        ch.gainNode.gain.setValueAtTime(
+          ch.muted ? 0 : ch.volume,
+          this.audioContext.currentTime
+        );
+      }
+    });
+  }
+
+  /**
+   * Establece el volumen master
+   */
+  setMasterVolume(volume) {
+    if (!this.masterGain) return;
+
+    this.masterGain.gain.setValueAtTime(
+      volume,
+      this.audioContext.currentTime
+    );
+  }
+
+  /**
+   * Establece EQ de un micrófono
+   */
+  setMicEQ(micId, bass, mid, treble) {
+    const channel = this.channels.get(micId);
+    if (!channel) return;
+
+    channel.eq.lowShelf.gain.setValueAtTime(bass, this.audioContext.currentTime);
+    channel.eq.midPeak.gain.setValueAtTime(mid, this.audioContext.currentTime);
+    channel.eq.highShelf.gain.setValueAtTime(treble, this.audioContext.currentTime);
+  }
+
+  /**
+   * Obtiene el nivel de audio de un micrófono (para VU meter)
+   */
+  getMicLevel(micId) {
+    const channel = this.channels.get(micId);
+    if (!channel || !channel.analyser) return -Infinity;
+
+    const dataArray = new Uint8Array(channel.analyser.frequencyBinCount);
+    channel.analyser.getByteFrequencyData(dataArray);
+
+    // Calcular RMS
+    let sum = 0;
+    for (let i = 0; i < dataArray.length; i++) {
+      sum += dataArray[i] * dataArray[i];
+    }
+    const rms = Math.sqrt(sum / dataArray.length);
+
+    // Convertir a dB (aproximado)
+    const db = 20 * Math.log10(rms / 255);
+
+    return isFinite(db) ? db : -Infinity;
+  }
+
+  /**
+   * Obtiene todos los niveles de audio
+   */
+  getAllLevels() {
+    const levels = {};
+    this.channels.forEach((channel, micId) => {
+      levels[micId] = this.getMicLevel(micId);
+    });
+    return levels;
+  }
+
+  /**
+   * Lista dispositivos de salida disponibles
+   */
+  async getOutputDevices() {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      return devices.filter(d => d.kind === 'audiooutput');
+    } catch (error) {
+      console.error('[AudioMixer] Error al obtener dispositivos:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Cambia el dispositivo de salida (si el navegador lo soporta)
+   */
+  async setOutputDevice(deviceId) {
+    // Esto requiere un elemento <audio> o hack con setSinkId
+    // Por ahora, el audio va al dispositivo por defecto
+    console.log('[AudioMixer] Cambio de dispositivo no implementado aún');
+  }
+
+  /**
+   * Destruye el mixer y libera recursos
+   */
+  destroy() {
+    this.channels.forEach((channel, micId) => {
+      this.removeMicChannel(micId);
+    });
+
+    if (this.audioContext) {
+      this.audioContext.close();
+      this.audioContext = null;
+    }
+
+    this.initialized = false;
+    console.log('[AudioMixer] Destruido');
+  }
+}
+
+// Instancia global
+window.audioMixer = new AudioMixer();

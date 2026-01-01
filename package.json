@@ -1,0 +1,33 @@
+{
+  "name": "wireless-microphone-pwa",
+  "version": "0.2.0",
+  "description": "App PWA de micrófono inalámbrico multi-dispositivo con conexión QR",
+  "main": "server/index.js",
+  "scripts": {
+    "dev": "node scripts/start-server.js",
+    "start": "node server/index.js",
+    "stop": "node scripts/stop-server.js",
+    "status": "node scripts/status-server.js"
+  },
+  "keywords": [
+    "microphone",
+    "wireless",
+    "pwa",
+    "webrtc",
+    "karaoke",
+    "audio"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "qrcode": "^1.5.3",
+    "socket.io": "^4.7.2",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

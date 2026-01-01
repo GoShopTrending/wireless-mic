@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0f172a">
+  <title>Micrófono - Wireless Mic</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Connection View -->
+    <div id="connect-view">
+      <header class="app-header">
+        <a href="/" class="btn btn-ghost btn-sm" style="margin-bottom: 1.5rem;">← Inicio</a>
+        <div class="logo">
+          <span class="logo-icon">🎤</span>
+          <h1>Conectar</h1>
+        </div>
+      </header>
+
+      <main>
+        <!-- Manual Input -->
+        <div class="panel animate-slide-up" id="manual-connect">
+          <h3 class="text-center mb-4">Ingresar Código de Sala</h3>
+          <div class="input-group">
+            <input type="text" id="room-code-input" placeholder="Ej: ABC123" maxlength="6" autocapitalize="characters" style="text-align: center; font-size: 1.5rem; letter-spacing: 0.3rem;">
+          </div>
+          <div class="input-group">
+            <input type="text" id="mic-name-input" placeholder="Tu nombre (ej: Juan)" maxlength="20">
+          </div>
+          <button class="btn btn-success btn-full btn-lg" id="connect-btn">🔗 Conectar</button>
+        </div>
+
+        <!-- QR Scanner -->
+        <div class="panel animate-slide-up delay-100 text-center" id="qr-scanner-section">
+          <h3 class="mb-4 text-muted">O escanea el código QR</h3>
+          <div id="qr-reader" style="min-height: 200px; display: flex; align-items: center; justify-content: center;">
+            <span class="text-muted">Cámara desactivada</span>
+          </div>
+          <button class="btn btn-secondary btn-full mt-4" id="start-scanner-btn">📷 Abrir Cámara</button>
+        </div>
+
+        <p class="text-danger text-center mt-4" id="connect-error"></p>
+      </main>
+    </div>
+
+    <!-- Microphone View -->
+    <div id="mic-view" class="hidden">
+      <header class="panel" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; margin-bottom: 1rem;">
+        <div>
+          <span class="status-indicator connected" id="mic-status">
+            <span class="status-dot"></span>
+            Conectado
+          </span>
+          <p class="text-muted text-sm mt-2" id="connected-room-name">Sala</p>
+        </div>
+        <button class="btn btn-danger btn-sm" id="disconnect-btn">Salir</button>
+      </header>
+
+      <main class="text-center">
+        <!-- Big Mic Button -->
+        <div class="animate-slide-up">
+          <button class="big-mic-btn" id="mic-toggle-btn">🎤</button>
+          <p class="text-muted" id="mic-hint">Toca para activar el micrófono</p>
+        </div>
+
+        <!-- VU Meter -->
+        <div class="animate-slide-up delay-100" style="max-width: 300px; margin: 2rem auto;">
+          <div class="vu-meter large">
+            <div class="vu-meter-fill" id="vu-meter-fill" style="width: 0%"></div>
+          </div>
+          <span class="text-muted text-sm" id="vu-label" style="font-family: monospace;">-∞ dB</span>
+        </div>
+
+        <!-- Local Controls -->
+        <div class="panel animate-slide-up delay-200">
+          <div class="slider-container">
+            <label>
+              <span>Mi Volumen</span>
+              <span id="local-volume-value">100%</span>
+            </label>
+            <input type="range" id="local-volume" min="0" max="100" value="100">
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+            <span>Silenciado</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="mute-toggle">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Effects Panel -->
+        <div class="panel animate-slide-up delay-300">
+          <h3 class="mb-4" style="font-size: 1rem;">🎛️ Mis Efectos</h3>
+
+          <div class="effect-control">
+            <label>
+              <span>Reverb</span>
+              <span class="value" id="local-reverb-value">0%</span>
+            </label>
+            <input type="range" id="local-reverb" min="0" max="100" value="0">
+          </div>
+
+          <div class="effect-control">
+            <label>
+              <span>Echo</span>
+              <span class="value" id="local-echo-value">0%</span>
+            </label>
+            <input type="range" id="local-echo" min="0" max="100" value="0">
+          </div>
+        </div>
+
+        <!-- My Name -->
+        <div class="animate-slide-up delay-500" style="margin-top: 2rem;">
+          <span class="text-muted text-sm">Conectado como:</span>
+          <p style="font-weight: 700; font-size: 1.25rem; color: var(--accent);" id="my-name">Micrófono</p>
+        </div>
+      </main>
+    </div>
+
+    <!-- Permission Modal -->
+    <div class="modal-overlay" id="permission-modal">
+      <div class="modal">
+        <h3>🎤 Permiso de Micrófono</h3>
+        <p>Necesitamos acceso a tu micrófono para transmitir audio al host.</p>
+        <button class="btn btn-success btn-full btn-lg" id="grant-permission-btn">✓ Permitir Acceso</button>
+      </div>
+    </div>
+
+    <!-- Disconnected Modal -->
+    <div class="modal-overlay" id="disconnected-modal">
+      <div class="modal">
+        <h3>😢 Desconectado</h3>
+        <p id="disconnect-reason">Se perdió la conexión con el host.</p>
+        <a href="/" class="btn btn-primary btn-full">Volver al Inicio</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="https://unpkg.com/simple-peer@9/simplepeer.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="/js/shared/socket-client.js"></script>
+  <script src="/js/mic/audio-capture.js"></script>
+  <script src="/js/mic/webrtc-client.js"></script>
+  <script src="/js/mic/main.js"></script>
+</body>
+</html>

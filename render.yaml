@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: wireless-mic
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: npm install
+    startCommand: node server/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: HOST
+        value: 0.0.0.0
+      - key: BASE_URL
+        fromService:
+          type: web
+          name: wireless-mic
+          property: host
+    healthCheckPath: /api/health
+    autoDeploy: true

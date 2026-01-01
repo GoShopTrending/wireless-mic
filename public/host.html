@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0f172a">
+  <title>Host - Wireless Mic</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="panel" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; margin-bottom: 1rem;">
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <a href="/" class="btn btn-ghost btn-icon btn-sm">←</a>
+        <div>
+          <h1 style="font-size: 1.25rem; margin-bottom: 0.25rem;" id="room-name">Creando sala...</h1>
+          <span class="status-indicator connecting" id="connection-status">
+            <span class="status-dot pulse"></span>
+            Conectando
+          </span>
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-icon" id="settings-btn" title="Configuración">⚙️</button>
+    </header>
+
+    <!-- QR Section -->
+    <section class="panel text-center animate-slide-up" id="qr-section">
+      <div class="panel-header" style="justify-content: center; gap: 1rem;">
+        <h2 class="panel-title">📱 Código QR</h2>
+      </div>
+      <div class="qr-container" id="qr-container">
+        <img id="qr-image" alt="QR Code" />
+      </div>
+      <p class="text-muted text-sm mb-4" id="qr-url"></p>
+      <div class="grid-2" style="max-width: 300px; margin: 0 auto;">
+        <button class="btn btn-secondary btn-sm" id="copy-link-btn">📋 Copiar</button>
+        <button class="btn btn-ghost btn-sm" id="toggle-qr-btn">👁️ Ocultar</button>
+      </div>
+    </section>
+
+    <!-- Connected Mics -->
+    <section class="panel animate-slide-up delay-100" id="mics-section">
+      <div class="panel-header">
+        <h2 class="panel-title">🎤 Micrófonos (<span id="mic-count">0</span>)</h2>
+      </div>
+
+      <div id="mics-list">
+        <div class="empty-state" id="no-mics">
+          <div class="empty-state-icon">🎤</div>
+          <p>Esperando micrófonos...<br><span class="text-muted">Escanea el código QR para conectarte</span></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Master Controls -->
+    <section class="panel animate-slide-up delay-200" id="master-section">
+      <div class="panel-header">
+        <h2 class="panel-title">🎛️ Control Master</h2>
+      </div>
+
+      <div class="slider-container">
+        <label>
+          <span>Volumen Master</span>
+          <span id="master-volume-value">100%</span>
+        </label>
+        <input type="range" id="master-volume" min="0" max="100" value="100">
+      </div>
+
+      <div class="grid-2 mt-4">
+        <button class="btn btn-secondary" id="mute-all-btn">🔇 Silenciar Todos</button>
+        <button class="btn btn-primary" id="effects-btn">🎛️ Efectos</button>
+      </div>
+    </section>
+
+    <!-- Effects Modal -->
+    <div class="modal-overlay" id="effects-modal">
+      <div class="modal" style="max-width: 28rem;">
+        <h3>🎛️ Efectos Globales</h3>
+
+        <div class="effect-control">
+          <label>
+            <span>Reverb</span>
+            <span class="value" id="reverb-value">0%</span>
+          </label>
+          <input type="range" id="reverb-slider" min="0" max="100" value="0">
+        </div>
+
+        <div class="effect-control">
+          <label>
+            <span>Echo</span>
+            <span class="value" id="echo-value">0%</span>
+          </label>
+          <input type="range" id="echo-slider" min="0" max="100" value="0">
+        </div>
+
+        <div class="effect-control">
+          <label>
+            <span>Bass</span>
+            <span class="value" id="bass-value">0 dB</span>
+          </label>
+          <input type="range" id="bass-slider" min="-12" max="12" value="0">
+        </div>
+
+        <div class="effect-control">
+          <label>
+            <span>Mid</span>
+            <span class="value" id="mid-value">0 dB</span>
+          </label>
+          <input type="range" id="mid-slider" min="-12" max="12" value="0">
+        </div>
+
+        <div class="effect-control">
+          <label>
+            <span>Treble</span>
+            <span class="value" id="treble-value">0 dB</span>
+          </label>
+          <input type="range" id="treble-slider" min="-12" max="12" value="0">
+        </div>
+
+        <button class="btn btn-primary btn-full mt-4" id="close-effects-btn">Cerrar</button>
+      </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settings-modal">
+      <div class="modal">
+        <h3>⚙️ Configuración de Audio</h3>
+
+        <div class="input-group">
+          <label>Salida de Audio</label>
+          <select id="audio-output-select">
+            <option value="default">Dispositivo por defecto</option>
+          </select>
+        </div>
+
+        <button class="btn btn-primary btn-full" id="close-settings-btn">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script src="https://unpkg.com/simple-peer@9/simplepeer.min.js"></script>
+  <script src="/js/shared/socket-client.js"></script>
+  <script src="/js/host/audio-mixer.js"></script>
+  <script src="/js/host/room-manager.js"></script>
+  <script src="/js/host/main.js"></script>
+</body>
+</html>
