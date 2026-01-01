@@ -27,7 +27,8 @@
       "Bash(findstr:*)",
       "Bash(ls:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\ndocs: v0.2.1 - Documentar deploy a GitHub + Render.com\n\n- Actualizado package.json a version 0.2.1\n- Actualizado Cambios.md con detalles del deploy\n- Actualizado Pendientes.md con tarea de deploy completada\n- Agregadas URLs de producción para Render.com\n\nArchivos modificados:\n- package.json\n- Cambios.md\n- Pendientes.md\nEOF\n\\)\")",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "WebSearch"
     ]
   }
 }

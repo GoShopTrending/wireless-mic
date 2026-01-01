@@ -8,6 +8,7 @@ class AudioCapture {
     this.stream = null;
     this.sourceNode = null;
     this.gainNode = null;
+    this.noiseGateNode = null;
     this.analyser = null;
     this.processorNode = null;
     this.outputStream = null;
@@ -17,6 +18,16 @@ class AudioCapture {
     // Configuración
     this.volume = 1.0;
     this.muted = false;
+
+    // Noise Gate configuration
+    this.noiseGateEnabled = true;
+    this.noiseGateThreshold = -45; // dB threshold (ajustable)
+    this.noiseGateOpen = false;
+    this.noiseGateAttack = 0.01; // seconds
+    this.noiseGateRelease = 0.15; // seconds
+    this.noiseGateHold = 0.1; // seconds to hold open after speech
+    this.noiseGateHoldTimeout = null;
+    this.onNoiseGateChange = null; // callback for UI updates
   }
 
   /**
@@ -51,24 +62,34 @@ class AudioCapture {
       this.gainNode = this.audioContext.createGain();
       this.gainNode.gain.value = this.volume;
 
-      // Analizador para VU meter
+      // Noise Gate node (ganancia controlada por nivel de audio)
+      this.noiseGateNode = this.audioContext.createGain();
+      this.noiseGateNode.gain.value = this.noiseGateEnabled ? 0 : 1;
+
+      // Analizador para VU meter y noise gate
       this.analyser = this.audioContext.createAnalyser();
       this.analyser.fftSize = 256;
-      this.analyser.smoothingTimeConstant = 0.8;
+      this.analyser.smoothingTimeConstant = 0.5;
 
       // Destino para crear stream de salida
       const destination = this.audioContext.createMediaStreamDestination();
 
-      // Conectar cadena
+      // Conectar cadena: source -> gain -> analyser -> noiseGate -> destination
       this.sourceNode.connect(this.gainNode);
       this.gainNode.connect(this.analyser);
-      this.gainNode.connect(destination);
+      this.analyser.connect(this.noiseGateNode);
+      this.noiseGateNode.connect(destination);
 
       this.outputStream = destination.stream;
       this.initialized = true;
       this.capturing = true;
 
-      console.log('[AudioCapture] Inicializado correctamente');
+      // Iniciar procesamiento de noise gate
+      if (this.noiseGateEnabled) {
+        this.startNoiseGateProcessing();
+      }
+
+      console.log('[AudioCapture] Inicializado con Noise Gate');
 
       return this.outputStream;
     } catch (error) {
@@ -82,6 +103,103 @@ class AudioCapture {
         throw error;
       }
     }
+  }
+
+  /**
+   * Inicia el procesamiento del noise gate
+   */
+  startNoiseGateProcessing() {
+    if (this.noiseGateInterval) {
+      clearInterval(this.noiseGateInterval);
+    }
+
+    this.noiseGateInterval = setInterval(() => {
+      if (!this.noiseGateEnabled || !this.analyser || this.muted) return;
+
+      const level = this.getLevel();
+      const shouldOpen = level > this.noiseGateThreshold;
+
+      if (shouldOpen) {
+        // Abrir gate
+        if (!this.noiseGateOpen) {
+          this.noiseGateOpen = true;
+          this.noiseGateNode.gain.setTargetAtTime(
+            1,
+            this.audioContext.currentTime,
+            this.noiseGateAttack
+          );
+          if (this.onNoiseGateChange) this.onNoiseGateChange(true);
+        }
+
+        // Reset hold timeout
+        if (this.noiseGateHoldTimeout) {
+          clearTimeout(this.noiseGateHoldTimeout);
+          this.noiseGateHoldTimeout = null;
+        }
+      } else if (this.noiseGateOpen && !this.noiseGateHoldTimeout) {
+        // Iniciar hold timeout antes de cerrar
+        this.noiseGateHoldTimeout = setTimeout(() => {
+          this.noiseGateOpen = false;
+          this.noiseGateNode.gain.setTargetAtTime(
+            0,
+            this.audioContext.currentTime,
+            this.noiseGateRelease
+          );
+          if (this.onNoiseGateChange) this.onNoiseGateChange(false);
+          this.noiseGateHoldTimeout = null;
+        }, this.noiseGateHold * 1000);
+      }
+    }, 20); // Check every 20ms
+  }
+
+  /**
+   * Detiene el procesamiento del noise gate
+   */
+  stopNoiseGateProcessing() {
+    if (this.noiseGateInterval) {
+      clearInterval(this.noiseGateInterval);
+      this.noiseGateInterval = null;
+    }
+    if (this.noiseGateHoldTimeout) {
+      clearTimeout(this.noiseGateHoldTimeout);
+      this.noiseGateHoldTimeout = null;
+    }
+  }
+
+  /**
+   * Habilita/deshabilita el noise gate
+   */
+  setNoiseGateEnabled(enabled) {
+    this.noiseGateEnabled = enabled;
+
+    if (this.noiseGateNode) {
+      if (enabled) {
+        this.noiseGateNode.gain.value = 0;
+        this.noiseGateOpen = false;
+        this.startNoiseGateProcessing();
+      } else {
+        this.stopNoiseGateProcessing();
+        this.noiseGateNode.gain.value = 1;
+        this.noiseGateOpen = true;
+      }
+    }
+
+    console.log('[AudioCapture] Noise Gate:', enabled ? 'ON' : 'OFF');
+  }
+
+  /**
+   * Establece el umbral del noise gate en dB
+   */
+  setNoiseGateThreshold(thresholdDb) {
+    this.noiseGateThreshold = thresholdDb;
+    console.log('[AudioCapture] Noise Gate Threshold:', thresholdDb, 'dB');
+  }
+
+  /**
+   * Obtiene si el noise gate está abierto (transmitiendo)
+   */
+  isNoiseGateOpen() {
+    return this.noiseGateOpen;
   }
 
   /**
@@ -214,6 +332,9 @@ class AudioCapture {
    * Detiene la captura y libera recursos
    */
   stop() {
+    // Detener noise gate processing
+    this.stopNoiseGateProcessing();
+
     // Detener tracks del stream
     if (this.stream) {
       this.stream.getTracks().forEach(track => track.stop());
@@ -229,6 +350,11 @@ class AudioCapture {
     if (this.gainNode) {
       this.gainNode.disconnect();
       this.gainNode = null;
+    }
+
+    if (this.noiseGateNode) {
+      this.noiseGateNode.disconnect();
+      this.noiseGateNode = null;
     }
 
     if (this.analyser) {

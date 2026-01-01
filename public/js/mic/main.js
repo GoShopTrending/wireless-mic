@@ -29,6 +29,13 @@
   const localEchoValueEl = document.getElementById('local-echo-value');
   const myNameEl = document.getElementById('my-name');
 
+  // Noise Gate controls
+  const noiseGateToggle = document.getElementById('noise-gate-toggle');
+  const noiseGateThresholdEl = document.getElementById('noise-gate-threshold');
+  const noiseGateThresholdValueEl = document.getElementById('noise-gate-threshold-value');
+  const gateStatusIndicator = document.getElementById('gate-status-indicator');
+  const gateStatusText = document.getElementById('gate-status-text');
+
   // Modales
   const permissionModal = document.getElementById('permission-modal');
   const grantPermissionBtn = document.getElementById('grant-permission-btn');
@@ -134,6 +141,30 @@
     localEchoEl.addEventListener('input', (e) => {
       localEchoValueEl.textContent = `${e.target.value}%`;
     });
+
+    // Noise Gate controls
+    noiseGateToggle.addEventListener('change', (e) => {
+      const enabled = e.target.checked;
+      audioCapture.setNoiseGateEnabled(enabled);
+      noiseGateThresholdEl.parentElement.style.opacity = enabled ? '1' : '0.5';
+    });
+
+    noiseGateThresholdEl.addEventListener('input', (e) => {
+      const threshold = parseInt(e.target.value);
+      noiseGateThresholdValueEl.textContent = `${threshold} dB`;
+      audioCapture.setNoiseGateThreshold(threshold);
+    });
+
+    // Callback para actualizar UI del noise gate
+    audioCapture.onNoiseGateChange = (isOpen) => {
+      if (isOpen) {
+        gateStatusIndicator.className = 'status-indicator connected';
+        gateStatusText.textContent = 'Transmitiendo...';
+      } else {
+        gateStatusIndicator.className = 'status-indicator';
+        gateStatusText.textContent = 'Gate cerrado';
+      }
+    };
 
     // Eventos del socket
     socketClient.on('room-closed', (data) => {

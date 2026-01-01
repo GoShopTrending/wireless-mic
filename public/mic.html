@@ -93,8 +93,40 @@
           </div>
         </div>
 
-        <!-- Effects Panel -->
+        <!-- Noise Gate Panel (Anti-Echo) -->
         <div class="panel animate-slide-up delay-300">
+          <h3 class="mb-4" style="font-size: 1rem;">🚫 Anti-Echo (Noise Gate)</h3>
+          <p class="text-muted text-sm mb-4">Silencia el mic cuando no hablas para evitar capturar el audio del host</p>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <span>Activar Noise Gate</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="noise-gate-toggle" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="slider-container" id="noise-gate-threshold-container">
+            <label>
+              <span>Sensibilidad</span>
+              <span id="noise-gate-threshold-value">-45 dB</span>
+            </label>
+            <input type="range" id="noise-gate-threshold" min="-60" max="-20" value="-45">
+            <p class="text-muted text-sm mt-2">
+              ← Más sensible | Menos sensible →
+            </p>
+          </div>
+
+          <div class="text-center mt-4" id="noise-gate-status">
+            <span class="status-indicator" id="gate-status-indicator">
+              <span class="status-dot"></span>
+              <span id="gate-status-text">Gate cerrado</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Effects Panel -->
+        <div class="panel animate-slide-up delay-400">
           <h3 class="mb-4" style="font-size: 1rem;">🎛️ Mis Efectos</h3>
 
           <div class="effect-control">
