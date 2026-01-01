@@ -3,6 +3,8 @@
  */
 (function() {
   // Referencias DOM
+  const audioActivationModal = document.getElementById('audio-activation-modal');
+  const activateAudioBtn = document.getElementById('activate-audio-btn');
   const roomNameEl = document.getElementById('room-name');
   const connectionStatusEl = document.getElementById('connection-status');
   const qrImageEl = document.getElementById('qr-image');
@@ -27,15 +29,35 @@
   // Estado
   let allMuted = false;
   let vuMeterInterval = null;
+  let audioActivated = false;
+
+  /**
+   * Espera activación de audio por el usuario
+   */
+  activateAudioBtn.addEventListener('click', async () => {
+    try {
+      // Inicializar audio mixer CON el gesto del usuario
+      await audioMixer.init();
+      await audioMixer.resume();
+
+      audioActivated = true;
+      audioActivationModal.classList.remove('active');
+
+      console.log('[Host] Audio activado por usuario');
+
+      // Ahora inicializar el resto
+      await init();
+    } catch (error) {
+      console.error('[Host] Error al activar audio:', error);
+      alert('Error al activar audio. Por favor recarga la página.');
+    }
+  });
 
   /**
    * Inicializa la aplicación
    */
   async function init() {
     try {
-      // Inicializar audio mixer
-      await audioMixer.init();
-
       // Crear sala
       updateStatus('connecting', 'Creando sala...');
       const room = await roomManager.createRoom();
@@ -58,11 +80,6 @@
 
       // Cargar dispositivos de audio
       loadAudioDevices();
-
-      // Resumir audio context en primera interacción
-      document.body.addEventListener('click', async () => {
-        await audioMixer.resume();
-      }, { once: true });
 
     } catch (error) {
       console.error('[Host] Error al inicializar:', error);
@@ -411,6 +428,5 @@
     audioMixer.destroy();
   });
 
-  // Iniciar
-  init();
+  // NO iniciar automáticamente - esperar click en "Activar Audio"
 })();

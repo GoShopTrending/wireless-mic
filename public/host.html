@@ -9,6 +9,18 @@
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
+  <!-- Audio Activation Overlay -->
+  <div class="modal-overlay active" id="audio-activation-modal" style="z-index: 9999;">
+    <div class="modal text-center">
+      <div style="font-size: 4rem; margin-bottom: 1rem;">🔊</div>
+      <h2 style="margin-bottom: 0.5rem;">Activar Audio</h2>
+      <p class="text-muted mb-4">Los navegadores requieren un click para reproducir audio</p>
+      <button class="btn btn-primary btn-lg" id="activate-audio-btn" style="min-width: 200px;">
+        ▶️ Activar Audio
+      </button>
+    </div>
+  </div>
+
   <div class="app-container">
     <!-- Header -->
     <header class="panel" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; margin-bottom: 1rem;">
