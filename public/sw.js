@@ -1,7 +1,7 @@
 /**
  * Service Worker para Wireless Microphone PWA
  */
-const CACHE_NAME = 'wireless-mic-v1';
+const CACHE_NAME = 'wireless-mic-v2';
 
 const STATIC_ASSETS = [
   '/',
@@ -9,8 +9,6 @@ const STATIC_ASSETS = [
   '/host.html',
   '/mic.html',
   '/css/styles.css',
-  '/css/host.css',
-  '/css/mic.css',
   '/js/shared/socket-client.js',
   '/js/host/main.js',
   '/js/host/audio-mixer.js',
@@ -18,7 +16,8 @@ const STATIC_ASSETS = [
   '/js/mic/main.js',
   '/js/mic/audio-capture.js',
   '/js/mic/webrtc-client.js',
-  '/manifest.json'
+  '/manifest.json',
+  '/assets/icons/icon.svg'
 ];
 
 // Instalar - cachear assets estáticos
