@@ -1,7 +1,18 @@
 {
-  "version": "0.2.0",
+  "version": "0.2.2",
   "releaseDate": "2026-01-01",
   "changelog": {
+    "0.2.2": {
+      "date": "2026-01-01",
+      "changes": [
+        "Sistema Anti-Echo completo",
+        "Noise Gate en cliente mic - silencia cuando no hay voz",
+        "Ducking Automático - Host detecta audio y reduce ganancia de mics",
+        "Indicadores visuales de estado (Gate cerrado/abierto, Ducking activo)",
+        "Umbral de sensibilidad configurable (-60 a -20 dB)",
+        "Archivos modificados: audio-capture.js, audio-mixer.js, audio.handler.js, main.js (host y mic), mic.html"
+      ]
+    },
     "0.2.0": {
       "date": "2026-01-01",
       "changes": [

@@ -40,6 +40,15 @@
       await audioMixer.init();
       await audioMixer.resume();
 
+      // Configurar callback de ducking (anti-echo)
+      audioMixer.onDuckingChange = (isDucking) => {
+        // Enviar señal a todos los micrófonos
+        if (roomManager.roomId) {
+          roomManager.sendDuckingSignal(isDucking);
+          console.log('[Host] Ducking signal sent:', isDucking);
+        }
+      };
+
       audioActivated = true;
       audioActivationModal.classList.remove('active');
 

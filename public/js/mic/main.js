@@ -166,6 +166,22 @@
       }
     };
 
+    // Callback para actualizar UI del ducking
+    audioCapture.onDuckingChange = (isDucking) => {
+      const duckingIndicator = document.getElementById('ducking-indicator');
+      if (duckingIndicator) {
+        if (isDucking) {
+          duckingIndicator.style.background = 'rgba(251, 191, 36, 0.2)';
+          duckingIndicator.style.color = '#fbbf24';
+          duckingIndicator.textContent = '🔉 Reduciendo eco...';
+        } else {
+          duckingIndicator.style.background = 'var(--bg-secondary)';
+          duckingIndicator.style.color = 'inherit';
+          duckingIndicator.textContent = '🔊 Audio normal';
+        }
+      }
+    };
+
     // Eventos del socket
     socketClient.on('room-closed', (data) => {
       showDisconnectedModal('El host cerró la sala');
@@ -185,6 +201,12 @@
 
     socketClient.on('disconnected', (data) => {
       showDisconnectedModal('Se perdió la conexión');
+    });
+
+    // Señal de ducking del host (anti-echo)
+    socketClient.on('apply-ducking', (data) => {
+      console.log('[Mic] Ducking signal received:', data.ducking);
+      audioCapture.applyDucking(data.ducking);
     });
 
     // WebRTC callbacks

@@ -19,6 +19,14 @@ class AudioMixer {
       eqMid: 0,
       eqTreble: 0
     };
+
+    // Ducking system (anti-echo)
+    this.duckingEnabled = true;
+    this.duckingThreshold = -35; // dB - cuando el audio supera esto, enviar ducking
+    this.isDucking = false;
+    this.duckingInterval = null;
+    this.onDuckingChange = null; // callback para notificar al socket
+    this.masterAnalyser = null;
   }
 
   /**
@@ -45,16 +53,86 @@ class AudioMixer {
       this.compressor.attack.value = 0.003;
       this.compressor.release.value = 0.25;
 
-      // Conectar cadena master
+      // Analizador master para detectar nivel de salida (ducking)
+      this.masterAnalyser = this.audioContext.createAnalyser();
+      this.masterAnalyser.fftSize = 256;
+      this.masterAnalyser.smoothingTimeConstant = 0.5;
+
+      // Conectar cadena master: masterGain -> compressor -> analyser -> destination
       this.masterGain.connect(this.compressor);
-      this.compressor.connect(this.audioContext.destination);
+      this.compressor.connect(this.masterAnalyser);
+      this.masterAnalyser.connect(this.audioContext.destination);
 
       this.initialized = true;
       console.log('[AudioMixer] Inicializado');
+
+      // Iniciar detección de ducking
+      this.startDuckingDetection();
     } catch (error) {
       console.error('[AudioMixer] Error al inicializar:', error);
       throw error;
     }
+  }
+
+  /**
+   * Inicia la detección de ducking (monitorea salida de audio)
+   */
+  startDuckingDetection() {
+    if (this.duckingInterval) {
+      clearInterval(this.duckingInterval);
+    }
+
+    this.duckingInterval = setInterval(() => {
+      if (!this.duckingEnabled || !this.masterAnalyser) return;
+
+      const level = this.getMasterLevel();
+      const shouldDuck = level > this.duckingThreshold;
+
+      if (shouldDuck !== this.isDucking) {
+        this.isDucking = shouldDuck;
+        console.log(`[AudioMixer] Ducking: ${shouldDuck ? 'ON' : 'OFF'} (level: ${level.toFixed(1)} dB)`);
+
+        if (this.onDuckingChange) {
+          this.onDuckingChange(shouldDuck);
+        }
+      }
+    }, 50); // Check every 50ms
+  }
+
+  /**
+   * Obtiene el nivel de audio master (salida)
+   */
+  getMasterLevel() {
+    if (!this.masterAnalyser) return -Infinity;
+
+    const dataArray = new Uint8Array(this.masterAnalyser.fftSize);
+    this.masterAnalyser.getByteTimeDomainData(dataArray);
+
+    let sum = 0;
+    for (let i = 0; i < dataArray.length; i++) {
+      const amplitude = (dataArray[i] - 128) / 128;
+      sum += amplitude * amplitude;
+    }
+    const rms = Math.sqrt(sum / dataArray.length);
+    const db = 20 * Math.log10(rms + 0.0001);
+
+    return isFinite(db) ? db : -60;
+  }
+
+  /**
+   * Habilita/deshabilita el sistema de ducking
+   */
+  setDuckingEnabled(enabled) {
+    this.duckingEnabled = enabled;
+    console.log('[AudioMixer] Ducking system:', enabled ? 'ON' : 'OFF');
+  }
+
+  /**
+   * Establece el umbral de ducking
+   */
+  setDuckingThreshold(thresholdDb) {
+    this.duckingThreshold = thresholdDb;
+    console.log('[AudioMixer] Ducking threshold:', thresholdDb, 'dB');
   }
 
   /**

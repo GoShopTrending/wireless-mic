@@ -306,6 +306,17 @@ class RoomManager {
   }
 
   /**
+   * Envía señal de ducking a todos los micrófonos (anti-echo)
+   * @param {boolean} ducking - true = reducir ganancia, false = restaurar
+   */
+  sendDuckingSignal(ducking) {
+    socketClient.send('ducking-signal', {
+      roomId: this.roomId,
+      ducking: ducking
+    });
+  }
+
+  /**
    * Obtiene lista de micrófonos
    */
   getMics() {

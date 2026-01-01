@@ -28,6 +28,12 @@ class AudioCapture {
     this.noiseGateHold = 0.1; // seconds to hold open after speech
     this.noiseGateHoldTimeout = null;
     this.onNoiseGateChange = null; // callback for UI updates
+
+    // Ducking configuration (anti-echo from host)
+    this.duckingActive = false;
+    this.duckingAmount = 0.3; // Reduce to 30% when ducking
+    this.duckingNode = null;
+    this.onDuckingChange = null; // callback for UI updates
   }
 
   /**
@@ -66,6 +72,10 @@ class AudioCapture {
       this.noiseGateNode = this.audioContext.createGain();
       this.noiseGateNode.gain.value = this.noiseGateEnabled ? 0 : 1;
 
+      // Ducking node (reduce ganancia cuando el host está reproduciendo audio)
+      this.duckingNode = this.audioContext.createGain();
+      this.duckingNode.gain.value = 1.0;
+
       // Analizador para VU meter y noise gate
       this.analyser = this.audioContext.createAnalyser();
       this.analyser.fftSize = 256;
@@ -74,11 +84,12 @@ class AudioCapture {
       // Destino para crear stream de salida
       const destination = this.audioContext.createMediaStreamDestination();
 
-      // Conectar cadena: source -> gain -> analyser -> noiseGate -> destination
+      // Conectar cadena: source -> gain -> analyser -> noiseGate -> ducking -> destination
       this.sourceNode.connect(this.gainNode);
       this.gainNode.connect(this.analyser);
       this.analyser.connect(this.noiseGateNode);
-      this.noiseGateNode.connect(destination);
+      this.noiseGateNode.connect(this.duckingNode);
+      this.duckingNode.connect(destination);
 
       this.outputStream = destination.stream;
       this.initialized = true;
@@ -211,6 +222,38 @@ class AudioCapture {
    */
   isNoiseGateOpen() {
     return this.noiseGateOpen;
+  }
+
+  /**
+   * Aplica ducking (reduce ganancia cuando el host reproduce audio)
+   * @param {boolean} active - true = reducir ganancia, false = restaurar
+   */
+  applyDucking(active) {
+    if (!this.duckingNode || !this.audioContext) return;
+
+    this.duckingActive = active;
+    const targetGain = active ? this.duckingAmount : 1.0;
+
+    // Transición suave
+    this.duckingNode.gain.setTargetAtTime(
+      targetGain,
+      this.audioContext.currentTime,
+      active ? 0.02 : 0.1 // Rápido al ducking, lento al restaurar
+    );
+
+    console.log(`[AudioCapture] Ducking: ${active ? 'ON (30%)' : 'OFF (100%)'}`);
+
+    if (this.onDuckingChange) {
+      this.onDuckingChange(active);
+    }
+  }
+
+  /**
+   * Establece la cantidad de reducción del ducking (0.0 - 1.0)
+   */
+  setDuckingAmount(amount) {
+    this.duckingAmount = Math.max(0, Math.min(1, amount));
+    console.log('[AudioCapture] Ducking amount:', this.duckingAmount);
   }
 
   /**
@@ -368,6 +411,11 @@ class AudioCapture {
     if (this.noiseGateNode) {
       this.noiseGateNode.disconnect();
       this.noiseGateNode = null;
+    }
+
+    if (this.duckingNode) {
+      this.duckingNode.disconnect();
+      this.duckingNode = null;
     }
 
     if (this.analyser) {

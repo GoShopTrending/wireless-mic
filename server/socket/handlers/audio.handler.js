@@ -157,4 +157,21 @@ module.exports = function(io, socket) {
     // Notificar cambio
     io.to(room.hostId).emit('mic-solo-state', { micId, solo });
   });
+
+  /**
+   * Host envía señal de ducking (anti-echo)
+   * Cuando el host está reproduciendo audio, notifica a los mics para que reduzcan su ganancia
+   */
+  socket.on('ducking-signal', (data) => {
+    const { roomId, ducking } = data;
+    const room = roomService.getRoom(roomId);
+
+    if (!room || room.hostId !== socket.id) return;
+
+    // Notificar a todos los micrófonos en la sala
+    socket.to(roomId).emit('apply-ducking', {
+      ducking: ducking,
+      timestamp: Date.now()
+    });
+  });
 };
