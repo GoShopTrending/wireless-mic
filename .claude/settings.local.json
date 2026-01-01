@@ -8,7 +8,25 @@
       "Bash(powershell -Command \"Start-Sleep -Seconds 2; Invoke-WebRequest -Uri http://localhost:3000/api/health -UseBasicParsing | Select-Object -ExpandProperty Content\")",
       "Bash(tree:*)",
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git config:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat: Initial release - Wireless Mic PWA v0.2.0\n\n- WebSocket + WebRTC P2P architecture for real-time audio streaming\n- QR code connection for easy device pairing\n- Support for 10+ simultaneous microphones\n- Individual and master volume controls\n- Audio effects: EQ, Reverb, Echo\n- VU meters with real-time visualization\n- Dark theme UI inspired by Impostor/Liga style\n- PWA installable with Service Worker\n- Ready for Render.com deployment\nEOF\n\\)\")",
+      "Bash(gh repo create:*)",
+      "Bash(if [ -f \"C:\\\\Users\\\\cisra\\\\Microphone\\\\.env\" ])",
+      "Bash(then grep GITHUB_TOKEN \"C:\\\\Users\\\\cisra\\\\Microphone\\\\.env\")",
+      "Bash(fi)",
+      "Bash(if [ -f \"C:\\\\Users\\\\cisra\\\\CentralMarketPRO\\\\.env\" ])",
+      "Bash(then grep GITHUB_TOKEN \"C:\\\\Users\\\\cisra\\\\CentralMarketPRO\\\\.env\")",
+      "Bash(powershell -Command \"$token = \\(Get-Content ''C:\\\\Users\\\\cisra\\\\CentralMarketPRO\\\\.env'' | Select-String ''GITHUB_TOKEN''\\).ToString\\(\\).Split\\(''=''\\)[1]; $headers = @{ Authorization = \"\"token $token\"\"; Accept = ''application/vnd.github.v3+json'' }; $body = @{ name = ''wireless-mic''; description = ''Wireless Microphone PWA - Turn any phone into a wireless microphone''; private = $false; auto_init = $false } | ConvertTo-Json; Invoke-RestMethod -Uri ''https://api.github.com/orgs/GoShopTrending/repos'' -Method Post -Headers $headers -Body $body -ContentType ''application/json''\")",
+      "Bash(powershell -Command \"$token = \\(Get-Content ''C:\\\\Users\\\\cisra\\\\CentralMarketPRO\\\\.env'' | Select-String ''GITHUB_TOKEN''\\).ToString\\(\\).Split\\(''=''\\)[1]; $headers = @{ Authorization = \"\"token $token\"\"; Accept = ''application/vnd.github.v3+json'' }; $body = ''{\"\"name\"\":\"\"wireless-mic\"\",\"\"description\"\":\"\"Wireless Microphone PWA\"\",\"\"private\"\":false}''; Invoke-RestMethod -Uri ''https://api.github.com/orgs/GoShopTrending/repos'' -Method Post -Headers $headers -Body $body -ContentType ''application/json'' | Select-Object html_url, clone_url\")",
+      "Bash(powershell -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\cisra\\\\Microphone\\\\create-repo.ps1\")",
+      "Bash(git branch:*)",
+      "Bash(git remote:*)",
+      "Bash(git push:*)",
+      "Bash(ls -la \"C:\\\\Users\\\\cisra\\\\Microphone\"\"*.md 2>/dev/null || dir \"C:UserscisraMicrophone*.md \")",
+      "Bash(findstr:*)",
+      "Bash(ls:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\ndocs: v0.2.1 - Documentar deploy a GitHub + Render.com\n\n- Actualizado package.json a version 0.2.1\n- Actualizado Cambios.md con detalles del deploy\n- Actualizado Pendientes.md con tarea de deploy completada\n- Agregadas URLs de producción para Render.com\n\nArchivos modificados:\n- package.json\n- Cambios.md\n- Pendientes.md\nEOF\n\\)\")"
     ]
   }
 }

@@ -2,6 +2,33 @@
 
 ---
 
+## v0.2.1 - 2026-01-01
+
+### Deploy a GitHub + Render.com
+
+**Repositorio GitHub**:
+- URL: https://github.com/GoShopTrending/wireless-mic
+- Organización: GoShopTrending
+- Visibilidad: Público
+
+**Configuración Render.com**:
+- `render.yaml` configurado para deploy automático
+- Plan: Free tier
+- Runtime: Node.js
+- Build: `npm install`
+- Start: `node server/index.js`
+- Health check: `/api/health`
+
+**URLs de Producción** (después de conectar Render):
+- Landing: `https://wireless-mic.onrender.com/`
+- Host: `https://wireless-mic.onrender.com/host`
+- Mic: `https://wireless-mic.onrender.com/mic`
+
+**Archivos Agregados**:
+- `create-repo.ps1` - Script para crear repo via GitHub API
+
+---
+
 ## v0.2.0 - 2026-01-01
 
 ### Rediseño Visual - Estilo Impostor/Liga

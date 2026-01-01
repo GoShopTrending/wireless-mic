@@ -19,10 +19,28 @@
 
 ---
 
+## 2026-01-01 - Deploy a GitHub + Render.com
+
+**Instrucción**: Subir proyecto a GitHub y configurar para deploy en Render.com
+
+**Plan de Acción**:
+1. ✅ Inicializar repositorio Git
+2. ✅ Crear repositorio en GitHub (GoShopTrending/wireless-mic)
+3. ✅ Push código a GitHub
+4. ✅ Documentar configuración de Render.com
+
+**Estado**: ✅ COMPLETADA
+
+**Fecha de Completado**: 2026-01-01
+
+**Repositorio**: https://github.com/GoShopTrending/wireless-mic
+
+---
+
 ## Próximas Mejoras (Opcionales)
 
 1. ❌ Agregar iconos PWA reales (actualmente placeholders)
 2. ❌ Implementar TURN server para NAT complicados
 3. ❌ Agregar efectos de audio reales (Reverb con ConvolverNode)
 4. ❌ Testing en múltiples dispositivos
-5. ❌ Deploy a producción con HTTPS
+5. ✅ Deploy a producción con HTTPS (Render.com configurado)
