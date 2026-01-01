@@ -14,9 +14,6 @@ services:
       - key: HOST
         value: 0.0.0.0
       - key: BASE_URL
-        fromService:
-          type: web
-          name: wireless-mic
-          property: host
+        value: https://wireless-mic.onrender.com
     healthCheckPath: /api/health
     autoDeploy: true
