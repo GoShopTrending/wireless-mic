@@ -113,11 +113,20 @@ class AudioCapture {
       clearInterval(this.noiseGateInterval);
     }
 
+    let logCounter = 0;
+
     this.noiseGateInterval = setInterval(() => {
       if (!this.noiseGateEnabled || !this.analyser || this.muted) return;
 
       const level = this.getLevel();
       const shouldOpen = level > this.noiseGateThreshold;
+
+      // Log cada 500ms para debug
+      logCounter++;
+      if (logCounter >= 25) {
+        console.log(`[NoiseGate] Level: ${level.toFixed(1)} dB, Threshold: ${this.noiseGateThreshold} dB, Open: ${this.noiseGateOpen}`);
+        logCounter = 0;
+      }
 
       if (shouldOpen) {
         // Abrir gate
@@ -128,6 +137,7 @@ class AudioCapture {
             this.audioContext.currentTime,
             this.noiseGateAttack
           );
+          console.log('[NoiseGate] ABIERTO - Transmitiendo');
           if (this.onNoiseGateChange) this.onNoiseGateChange(true);
         }
 
@@ -145,6 +155,7 @@ class AudioCapture {
             this.audioContext.currentTime,
             this.noiseGateRelease
           );
+          console.log('[NoiseGate] CERRADO');
           if (this.onNoiseGateChange) this.onNoiseGateChange(false);
           this.noiseGateHoldTimeout = null;
         }, this.noiseGateHold * 1000);
@@ -261,20 +272,22 @@ class AudioCapture {
   getLevel() {
     if (!this.analyser) return -Infinity;
 
-    const dataArray = new Uint8Array(this.analyser.frequencyBinCount);
-    this.analyser.getByteFrequencyData(dataArray);
+    // Usar getByteTimeDomainData para mejor detección de amplitud
+    const dataArray = new Uint8Array(this.analyser.fftSize);
+    this.analyser.getByteTimeDomainData(dataArray);
 
-    // Calcular RMS
+    // Calcular RMS desde la forma de onda (valores centrados en 128)
     let sum = 0;
     for (let i = 0; i < dataArray.length; i++) {
-      sum += dataArray[i] * dataArray[i];
+      const amplitude = (dataArray[i] - 128) / 128; // Normalizar a -1 a 1
+      sum += amplitude * amplitude;
     }
     const rms = Math.sqrt(sum / dataArray.length);
 
-    // Convertir a dB (aproximado)
-    const db = 20 * Math.log10(rms / 255);
+    // Convertir a dB
+    const db = 20 * Math.log10(rms + 0.0001); // +0.0001 para evitar log(0)
 
-    return isFinite(db) ? db : -Infinity;
+    return isFinite(db) ? db : -60;
   }
 
   /**
