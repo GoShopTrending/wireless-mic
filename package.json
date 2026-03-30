@@ -4,10 +4,11 @@
   "description": "App PWA de micrófono inalámbrico multi-dispositivo con conexión QR",
   "main": "server/index.js",
   "scripts": {
-    "dev": "node scripts/start-server.js",
+    "dev": "node C:/Users/cisra/scripts/bg-start.js",
     "start": "node server/index.js",
     "stop": "node scripts/stop-server.js",
-    "status": "node scripts/status-server.js"
+    "status": "node scripts/status-server.js",
+    "dev:fg": "node scripts/start-server.js"
   },
   "keywords": [
     "microphone",
